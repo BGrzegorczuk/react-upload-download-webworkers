@@ -7,6 +7,10 @@ export const MSG_TYPES = {
     UPLOAD_PROGRESS: 4,
     UPLOAD_SUCCESS: 5,
     UPLOAD_FAILURE: 6,
+
+    UPDATE_WORKER_STATE: 7,
+
+    LOG: 8
 };
 
 export const WORKER_STATUSES = {
@@ -18,10 +22,10 @@ export const WORKER_STATUSES = {
 export const TASK_STATUSES = {
     NEW: 1,
     ASSIGNED: 2,
-    PROCESSING: 2,
-    STOPPED: 3,
-    COMPLETED: 4,
-    BROKEN: 5
+    PROCESSING: 3,
+    STOPPED: 4,
+    COMPLETED: 5,
+    BROKEN: 6
 };
 
 export const TRANSFER_TYPES = {

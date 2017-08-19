@@ -15,6 +15,8 @@ class UploadWorkerWrapper extends WorkerWrapper {
     initProcessingTask(task) {
         const {name, size} = task.file;
 
+        this.updateState(consts.WORKER_STATUSES.PROCESSING);
+
         fileToArrayBuffer(task.file, (e) => {
             const data = e.target.result;
             this.worker.postMessage({
@@ -44,6 +46,15 @@ class UploadWorkerWrapper extends WorkerWrapper {
             case consts.MSG_TYPES.UPLOAD_PROGRESS:
                 this.handleWorkerUploadProgress(payload);
                 break;
+            case consts.MSG_TYPES.UPLOAD_SUCCESS:
+                this.handleWorkerUploadComplete(payload);
+                break;
+            case consts.MSG_TYPES.UPDATE_WORKER_STATE:
+                this.handleWorkerUpdateState(payload);
+                break;
+            case consts.MSG_TYPES.LOG:
+                this.handleWorkerLog(payload);
+                break;
             default:
                 console.warn('UNKNOWN MSG', e.data)
         }
@@ -53,8 +64,20 @@ class UploadWorkerWrapper extends WorkerWrapper {
         console.log('handleWorkerUploadInit', data);
     }
 
-    handleWorkerUploadProgress(data) {
-        console.log('handleWorkerUploadProgress', data);
+    handleWorkerUploadProgress(percentage) {
+        console.log('handleWorkerUploadProgress', percentage);
+    }
+
+    handleWorkerUploadComplete(data) {
+        console.log('handleWorkerUploadComplete', data);
+    }
+
+    handleWorkerUpdateState(newState) {
+        console.log('handleWorkerUpdateState', newState);
+    }
+
+    handleWorkerLog(msg) {
+        console.log('LOG FROM WORKER', msg);
     }
 }
 

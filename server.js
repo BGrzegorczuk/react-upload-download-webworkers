@@ -17,19 +17,26 @@ app.get('/', function (req, res) {
 
 app.post('/init_upload', function (req, res) {
     console.log("init_upload", req.body);
-    const {uid, filename, ext, size} = req.body;
+    const {uid, md5, filename, ext, size, chunksTotal} = req.body;
+
+    let chunksUploaded = 0;
+    if (DB[md5]) {
+        chunksUploaded = DB[md5].chunksUploaded;
+    }
 
     const fileData = {
         uid,
+        md5,
         filename,
         ext,
         size,
-        chunksUploaded: 0
+        chunksUploaded,
+        chunksTotal
     };
 
     // TODO: permissions & validation checks
     // TODO: could check uploaded files md5, if the file's upload has already been started in the past
-    DB[uid] = fileData;
+    DB[md5] = fileData;
 
     console.log("\nDB", DB);
 
@@ -38,17 +45,44 @@ app.post('/init_upload', function (req, res) {
 
 app.post('/upload', function (req, res) {
     console.log("/upload", req.query);
-    const { cn: chunkNumber, uid } = req.query;
-    const name = `${uid}.chunk.${chunkNumber}`;
+    const { cn: chunkNumber, uid, md5 } = req.query;
+    const name = `${md5}.chunk.${chunkNumber}`;
     const dst = fs.createWriteStream(`${__dirname}/files/${name}`);
 
     req.pipe(dst);
     req.on('end', function () {
+        DB[md5].chunksUploaded = parseInt(chunkNumber, 10);
+        console.log(DB[md5]);
         console.log('file stream END');
         res.writeHead(200);
         res.end();
         return;
     });
+});
+
+app.post('/upload_finish', function (req, res) {
+    // console.log("upload_finish", req.body);
+    // const {uid, filename, ext, size, chunksTotal} = req.body;
+    //
+    // const fileData = {
+    //     uid,
+    //     filename,
+    //     ext,
+    //     size,
+    //     chunksUploaded: 0,
+    //     chunksTotal
+    // };
+    //
+    // // TODO: permissions & validation checks
+    // // TODO: could check uploaded files md5, if the file's upload has already been started in the past
+    // DB[md5] = fileData;
+    //
+    // console.log("\nDB", DB);
+    console.log('/upload_finish');
+
+    const response = {'file upload': "success"};
+
+    res.json(response);
 });
 
 app.listen(80, function () {

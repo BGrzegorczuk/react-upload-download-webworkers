@@ -1,4 +1,5 @@
 /* eslint no-mixed-operators: off */
+import * as SparkMD5 from 'spark-md5';
 
 export function guid() {
     let d = new Date().getTime();
@@ -18,4 +19,8 @@ export function fileToArrayBuffer(file, onSuccess) {
     const r = new FileReader();
     r.onload = onSuccess;
     r.readAsArrayBuffer(file);
+}
+
+export function fileMD5(file) {
+    return SparkMD5.ArrayBuffer.hash(file);
 }
