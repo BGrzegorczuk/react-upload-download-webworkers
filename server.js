@@ -35,7 +35,6 @@ app.post('/init_upload', function (req, res) {
     };
 
     // TODO: permissions & validation checks
-    // TODO: could check uploaded files md5, if the file's upload has already been started in the past
     DB[md5] = fileData;
 
     console.log("\nDB", DB);

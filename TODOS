@@ -1,1 +1,6 @@
 - handle worker.postMessage callbacks || promise-worker library
+- handle errors in the app, ex. no server connections, etc
+- add some persistent db, ex. mongo
+
+
+- add actions creators to maintain store - now nothing shows in the transfer list yet!

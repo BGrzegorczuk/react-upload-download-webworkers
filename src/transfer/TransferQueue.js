@@ -42,12 +42,16 @@ class TransferQueue {
     addTask(task) {
         console.log("addTask", task);
         const taskId = guid();
-        this.tasks[taskId] = {
+        const newTask = {
             ...task,
             uid: taskId,
             status: consts.TASK_STATUSES.NEW,
             timestamp: Date.now()
         };
+
+        this.tasks[taskId] = newTask;
+
+        return newTask;
     }
 
     removeTask(task) {}
