@@ -1,3 +1,5 @@
+
+
 export const MSG_TYPES = {
     ERROR: -1,
     INIT: 0,
@@ -19,6 +21,7 @@ export const WORKER_STATUSES = {
     BROKEN: 3
 };
 
+// TODO: reconsider
 export const TASK_STATUSES = {
     NEW: 1,
     ASSIGNED: 2,

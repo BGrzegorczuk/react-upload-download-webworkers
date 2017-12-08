@@ -1,13 +1,12 @@
-export const initialState = {
-    items: [],
-};
+import {combineReducers} from "redux";
+import processTasksReducer from "./reducers/processTasksReducer";
+import completedTasksReducer from "./reducers/completedTasksReducer";
 
-const transferReducer  = (state = initialState, action = {}) => {
-    switch (action.type) {
-        default:
-            return state;
-    }
-};
+
+const transferReducer = combineReducers({
+    processTasks: processTasksReducer,
+    // completedTasks: completedTasksReducer
+});
 
 
 export default transferReducer;

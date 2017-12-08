@@ -8,7 +8,7 @@ let INTERVAL = null;
 let TASK = null;
 
 
-// TODO: handle lastCallbackId parameter
+// TODO: handle PAUSE & REMOVE task by user UI action !!!!!
 const handleMsg = (e) => {
     const { type, payload } = e.data;
 
@@ -66,7 +66,6 @@ const handleUploadInit = (data) => {
     xhr.open('POST', url);
     xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
 
-
     // TODO: make synchronous call
     xhr.onreadystatechange = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
@@ -77,6 +76,7 @@ const handleUploadInit = (data) => {
             if (res.chunksTotal === res.chunksUploaded) {
                 handleFileAlreadyUploaded(data);
             } else {
+                // TODO: ?? why not just simple incrementation
                 CHUNK_NO = res.chunksUploaded === 0 ? 1 : res.chunksUploaded + 1;
                 self.postMessage({
                     type: consts.MSG_TYPES.UPLOAD_INIT,

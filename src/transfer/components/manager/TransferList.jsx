@@ -12,7 +12,9 @@ class TransferList extends React.Component {
 
     renderList(tasks) {
         if (!isEmpty(tasks)) {
-            return map(tasks, (taskId, task) => <TransferListItem key={taskId} file={task.file}/>);
+            // return map(tasks, (task, taskId) => console.log('XXX', task, taskId));
+            return map(tasks, (task, taskId) => <TransferListItem key={taskId} task={task}/>);
+
         } else {
             return this.renderEmptyList();
         }

@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
-import TransferManager from "./transfer/manager/TransferManager";
+import TransferManager from "./transfer/components/manager/TransferManager";
 
 
 class App extends Component {

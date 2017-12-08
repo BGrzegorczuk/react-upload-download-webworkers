@@ -11,6 +11,8 @@ import Dropzone from 'react-dropzone'
 //     );
 // };
 
+// TODO: move to ready-to-use separate component, with transfer callbacks already binded
+
 class DropZone extends React.Component {
     render() {
         return (

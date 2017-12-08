@@ -1,6 +1,14 @@
 - handle worker.postMessage callbacks || promise-worker library
-- handle errors in the app, ex. no server connections, etc
+- handle errors in the app, ex. no server connections, etc (for now, when there is no server working, worker gives some log, and then nothing happens)
 - add some persistent db, ex. mongo
 
-
+- handle case when uploaded already uploaded file - some different state of completed task? (differentiate in UI)
 - add actions creators to maintain store - now nothing shows in the transfer list yet!
+
+
+LOW LOW:
+
+- Maybe file md5 should be counted only if no file with same name has been already uploaded? (optimization)
+- fileToArrayBuffer syntax does NOT work in IE...
+- workers can be initialized with parameters given as a constructor options to transferQueue. Now they imports consts file with for ex. CHUNK_SIZE, but that can be more customizable
+- use immutable.js to handle tasks and directory tree collections in store?

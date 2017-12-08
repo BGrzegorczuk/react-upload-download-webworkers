@@ -4,13 +4,17 @@ import UploadWorkerWrapper from './workers/UploadWorkerWrapper';
 
 const INTERVAL = 2000;
 
+/*
+Singleton Queue
+ */
 class TransferQueue {
-    download_workers = [];
-    upload_workers = [];
+    downloadWorkers = [];
+    uploadWorkers = [];
     tasks = {};
 
-    constructor(opts) {
+    setup(opts) {
         const { uploadWorkersNo } = opts;
+        this.handleWorkerMsg = opts.handleWorkerMsg;
         this.initWorkers(uploadWorkersNo || 3);
         this.start();
     }
@@ -39,16 +43,17 @@ class TransferQueue {
         }
     }
 
-    addTask(task) {
+    async addTask(task) {
         console.log("addTask", task);
         const taskId = guid();
         const newTask = {
             ...task,
             uid: taskId,
             status: consts.TASK_STATUSES.NEW,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            totalBytes: task.file.size,
+            processedBytes: 0
         };
-
         this.tasks[taskId] = newTask;
 
         return newTask;
@@ -64,7 +69,7 @@ class TransferQueue {
         let freeWorker = null;
 
         if (task.type === consts.TRANSFER_TYPES.UPLOAD) {
-            for (let worker of this.upload_workers) {
+            for (let worker of this.uploadWorkers) {
                 if (worker) {
                     freeWorker = worker;
                     break;
@@ -83,7 +88,9 @@ class TransferQueue {
 
     addWorker(type) {
         if (type === consts.TRANSFER_TYPES.UPLOAD) {
-            this.upload_workers.push(new UploadWorkerWrapper())
+            this.uploadWorkers.push(new UploadWorkerWrapper(
+                { handleWorkerMsg: this.handleWorkerMsg }
+            ));
         }
     }
 
@@ -97,4 +104,4 @@ class TransferQueue {
     }
 }
 
-export default TransferQueue;
+export default new TransferQueue();

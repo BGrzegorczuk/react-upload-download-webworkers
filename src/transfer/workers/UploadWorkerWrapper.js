@@ -9,7 +9,7 @@ class UploadWorkerWrapper extends WorkerWrapper {
     constructor(opts) {
         super(opts);
         this.worker = new UploadWorker();
-        this.worker.onmessage = this.handleWorkerMsg.bind(this);
+        this.worker.onmessage = opts.handleWorkerMsg;
     }
 
     initProcessingTask(task) {
@@ -32,52 +32,9 @@ class UploadWorkerWrapper extends WorkerWrapper {
         });
     }
 
+    // PO CO TA METODA?
     processTask(task) {
         console.log('processTask', task);
-    }
-
-    handleWorkerMsg(e) {
-        const {type, payload} = e.data;
-
-        switch (type) {
-            case consts.MSG_TYPES.UPLOAD_INIT:
-                this.handleWorkerUploadInit(payload);
-                break;
-            case consts.MSG_TYPES.UPLOAD_PROGRESS:
-                this.handleWorkerUploadProgress(payload);
-                break;
-            case consts.MSG_TYPES.UPLOAD_SUCCESS:
-                this.handleWorkerUploadComplete(payload);
-                break;
-            case consts.MSG_TYPES.UPDATE_WORKER_STATE:
-                this.handleWorkerUpdateState(payload);
-                break;
-            case consts.MSG_TYPES.LOG:
-                this.handleWorkerLog(payload);
-                break;
-            default:
-                console.warn('UNKNOWN MSG', e.data)
-        }
-    }
-
-    handleWorkerUploadInit(data) {
-        console.log('handleWorkerUploadInit', data);
-    }
-
-    handleWorkerUploadProgress(percentage) {
-        console.log('handleWorkerUploadProgress', percentage);
-    }
-
-    handleWorkerUploadComplete(data) {
-        console.log('handleWorkerUploadComplete', data);
-    }
-
-    handleWorkerUpdateState(newState) {
-        console.log('handleWorkerUpdateState', newState);
-    }
-
-    handleWorkerLog(msg) {
-        console.log('LOG FROM WORKER', msg);
     }
 }
 

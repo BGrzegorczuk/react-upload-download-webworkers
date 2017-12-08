@@ -5,6 +5,7 @@ class WorkerWrapper {
         this.task = null;
         this.worker = null;
         this.status = consts.WORKER_STATUSES.IDLE;
+        this.handleWorkerMsg = opts.handleWorkerMsg;
         // this.callbacks = {}; // for postMessage callbacks
         // this.lastCallbackId = 0;
     }
@@ -16,8 +17,6 @@ class WorkerWrapper {
     initProcessingTask() { throw Error('To be implemented in inheriting class') }
 
     processTask() { throw Error('To be implemented in inheriting class') }
-
-    handleWorkerMsg () { throw Error('To be implemented in inheriting class') }
 
     assignTask(task) {
         task.status = consts.TASK_STATUSES.ASSIGNED;
