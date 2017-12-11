@@ -1,7 +1,8 @@
 import * as consts from '../../common/consts';
 import {fileMD5} from '../../common/utils';
+import {WORKER_STATES} from "../../common/consts";
 
-let CURRENT_STATUS = consts.WORKER_STATUSES.IDLE;
+let STATE = consts.WORKER_STATES.IDLE;
 let CHUNK_NO;
 let CHUNKS_TOTAL;
 let INTERVAL = null;
@@ -30,60 +31,52 @@ const handleMsg = (e) => {
     }
 };
 
-const progress = () => {
-    self.postMessage({ type: consts.MSG_TYPES.PROCESS })
+const sendMsg = (type, payload) => {
+    self.postMessage({
+        type,
+        payload
+    })
 };
 
 const reportError = (err) => {
     console.warn('reportError', err);
 };
 
-const updateState = (newState) => {
-    CURRENT_STATUS = newState;
-    self.postMessage({
-        type: consts.MSG_TYPES.UPDATE_WORKER_STATE,
-        payload: newState
-    });
-};
-
-const getState = () => {
-    return CURRENT_STATUS;
-};
-
 const handleUploadInit = (data) => {
+
+    // if STATE !== const.WORKER_STATES.IDLE {
+    //
+    // }
+
     const md5 = fileMD5(data.buffer);
 
-    self.postMessage({
-        type: consts.MSG_TYPES.LOG,
-        payload: 'File MD5: ' + md5
-    });
+    sendMsg(consts.MSG_TYPES.LOG, 'File MD5: ' + md5);
 
-    CHUNKS_TOTAL = Math.ceil(data.size / consts.CHUNK_SIZE);
+    CHUNKS_TOTAL = Math.ceil(data.totalBytes / consts.CHUNK_SIZE);
     TASK = data;
+
+    console.log("TASK from upload_worker", TASK);
 
     const url = 'http://localhost/init_upload';
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url);
     xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
 
-    // TODO: make synchronous call
+    // TODO: make synchronous call & handle errors
     xhr.onreadystatechange = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
             const res = JSON.parse(xhr.responseText);
+            const msgPayload = { ...res, uid: TASK.uid };
 
             console.log("RES:", res);
 
-            if (res.chunksTotal === res.chunksUploaded) {
+            if (res.chunksTotal === res.chunksProcessed) {
                 handleFileAlreadyUploaded(data);
             } else {
                 // TODO: ?? why not just simple incrementation
-                CHUNK_NO = res.chunksUploaded === 0 ? 1 : res.chunksUploaded + 1;
-                self.postMessage({
-                    type: consts.MSG_TYPES.UPLOAD_INIT,
-                    payload: {
-                        data: res
-                    }
-                });
+                CHUNK_NO = res.chunksProcessed === 0 ? 1 : res.chunksProcessed + 1;
+
+                sendMsg(consts.MSG_TYPES.UPLOAD_INIT, msgPayload);
 
                 uploadChunk(md5, data);
             }
@@ -95,7 +88,7 @@ const handleUploadInit = (data) => {
         md5,
         filename: data.filename,
         ext: data.ext,
-        size: data.size,
+        totalBytes: data.totalBytes,
         chunksTotal: CHUNKS_TOTAL
     };
 
@@ -109,8 +102,6 @@ const handleFileAlreadyUploaded = (data) => {
 const uploadChunk = (md5, data) => {
     let offset = consts.CHUNK_SIZE * (CHUNK_NO - 1);
     const buff = data.buffer;
-
-    console.log('uploadChunk', 'total bytes:'+buff.byteLength);
 
     const onChunkSent = function (e) {
         offset += e.loaded;
@@ -130,20 +121,22 @@ const uploadChunk = (md5, data) => {
         const chunk = buff.slice(offset, length+offset);
         console.log('sendChunk', CHUNK_NO, chunk.byteLength);
         const chunkData = new Uint8Array(chunk);
-        const url = `http://localhost/upload?uid=${data.uid}&md5=${md5}&cn=${CHUNK_NO}`;
+        console.log(">>>>>", offset, chunkData.length);
+        const url = `http://localhost/upload?uid=${data.uid}&md5=${md5}&cn=${CHUNK_NO}&pb=${offset+chunkData.length}`;
         let xhr = new XMLHttpRequest();
 
         xhr.open('POST', url);
         xhr.overrideMimeType('text/plain; charset=x-user-defined=binary');
 
         xhr.upload.onprogress = function (e) {
-            const percentage = Math.round(
-                ( (CHUNK_NO - 1) * consts.CHUNK_SIZE + e.loaded ) * 100 / buff.byteLength
-            );
+            // const percentage = Math.round(
+            //     ( (CHUNK_NO - 1) * consts.CHUNK_SIZE + e.loaded ) * 100 / buff.byteLength
+            // );
 
-            self.postMessage({
-                type: consts.MSG_TYPES.UPLOAD_PROGRESS,
-                payload: percentage
+            sendMsg(consts.MSG_TYPES.UPLOAD_PROGRESS, {
+                uid: TASK.uid,
+                processedBytes: offset + chunkData.length,
+                chunksProcessed: CHUNK_NO // TODO: check if that is correct chunk processed number
             });
         };
 
@@ -172,32 +165,39 @@ const onUploadFinish = (data) => {
         if (xhr.readyState === 4 && xhr.status === 200) {
             const res = JSON.parse(xhr.responseText);
 
-            self.postMessage({
-                type: consts.MSG_TYPES.UPLOAD_SUCCESS,
-                payload: res
-            });
+            sendMsg(consts.MSG_TYPES.UPLOAD_SUCCESS, res);
 
             cleanup();
-            updateState(consts.WORKER_STATUSES.IDLE);
+            updateState(consts.WORKER_STATES.IDLE);
         }
     };
 
     xhr.send(JSON.stringify({}));
 };
 
-const onUploadError = (data) => {
-    console.log('onUploadError', data);
-};
-
-const cleanup = () => {
-    CHUNK_NO = null;
-    CHUNKS_TOTAL = null;
-    TASK = null;
-};
-
 const handleUpdateState = (newState) => {
     updateState(newState);
 };
 
+const updateState = (newState) => {
+    STATE = newState;
+    sendMsg(consts.MSG_TYPES.UPDATE_WORKER_STATE, newState);
+};
+
+const getState = () => {
+    return STATE;
+};
+
+const cleanup = () => {
+    STATE = consts.WORKER_STATES.IDLE;
+    CHUNK_NO;
+    CHUNKS_TOTAL;
+    INTERVAL = null;
+    TASK = null;
+};
+
+const onUploadError = (err) => {
+    sendMsg(consts.MSG_TYPES.LOG, 'upload_worker error: ' + err);
+};
 
 self.addEventListener('message', handleMsg);

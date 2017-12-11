@@ -5,7 +5,7 @@ class TransferListItem extends React.Component {
 
     getPercentage(task) {
         const percentage = !task.processedBytes ? 0 : task.processedBytes/task.totalBytes * 100;
-        return percentage;
+        return percentage.toFixed(1);
     }
 
     render() {

@@ -1,6 +1,10 @@
-import * as consts from '../common/consts';
-import {guid} from '../common/utils';
-import UploadWorkerWrapper from './workers/UploadWorkerWrapper';
+import * as consts from "../common/consts";
+import {guid} from "../common/utils";
+import _isFunction from "lodash/isFunction";
+import _noop from "lodash/noop";
+import _assign from "lodash/assign";
+import UploadWorkerWrapper from "./workers/UploadWorkerWrapper";
+
 
 const INTERVAL = 2000;
 
@@ -14,7 +18,7 @@ class TransferQueue {
 
     setup(opts) {
         const { uploadWorkersNo } = opts;
-        this.handleWorkerMsg = opts.handleWorkerMsg;
+        this.assignCustomHandlers(opts);
         this.initWorkers(uploadWorkersNo || 3);
         this.start();
     }
@@ -27,21 +31,86 @@ class TransferQueue {
         clearInterval(this.ticker);
     }
 
+    //TODO: how to handle already uploaded tasks statuses? should it be BROKEN, COMPLETED or sth else?
     tick() {
         for (let taskId in this.tasks) {
             const task = this.tasks[taskId];
 
-            if (task.status === consts.TASK_STATUSES.NEW) {
+            if (task.state === consts.TASK_STATES.NEW) {
                 this.dispatchTaskToWorker(task);
+                break;
             }
-            // else if (task.status === consts.TASK_STATUSES.BROKEN) {
+            // else if (task.state === consts.TASK_STATES.BROKEN) {
             //     this.handleBrokenTask(task);
+            //     break;
             // }
-            // else if (task.status === consts.TASK_STATUSES.COMPLETED) {
-            //     this.deleteTask(task);
+            // else if (task.state === consts.TASK_STATES.COMPLETED) {
+            //     this.removeTask(taskId);
+            //     break;
             // }
         }
     }
+
+    handleWorkerMsg = (e) => {
+        const {type, payload} = e.data;
+
+        switch (type) {
+            case consts.MSG_TYPES.UPLOAD_INIT:
+                this.handleWorkerUploadInit(payload);
+                break;
+            case consts.MSG_TYPES.UPLOAD_PROGRESS:
+                this.handleWorkerUploadProgress(payload);
+                break;
+            case consts.MSG_TYPES.UPLOAD_SUCCESS:
+                this.handleWorkerUploadComplete(payload);
+                break;
+            case consts.MSG_TYPES.UPDATE_WORKER_STATE:
+                this.handleWorkerUpdateState(payload);
+                break;
+            case consts.MSG_TYPES.LOG:
+                this.handleWorkerLog(payload);
+                break;
+            default:
+                console.warn('UNKNOWN MSG', e.data)
+        }
+    };
+
+    assignCustomHandlers(opts) {
+        this.customHandlers = {
+            onUploadInit: _isFunction(opts.onUploadInit) ? opts.onUploadInit : _noop,
+            onUploadProgress: _isFunction(opts.onUploadProgress) ? opts.onUploadProgress : _noop,
+            onUploadComplete: _isFunction(opts.onUploadComplete) ? opts.onUploadComplete : _noop,
+            onUploadError: _isFunction(opts.onUploadError) ? opts.onUploadError : _noop,
+        };
+    }
+
+    handleWorkerUploadInit = (data) => {
+        console.log('handleWorkerUploadInit', data);
+        const { uid } = data;
+        let task = this.getTaskById(uid);
+        console.log('found task', task);
+        this.customHandlers.onUploadInit({...task});
+    };
+
+    handleWorkerUploadProgress = (data) => {
+        console.log('handleWorkerUploadProgress', data);
+        const { uid, processedBytes, chunksProcessed } = data;
+        let task = this.getTaskById(uid);
+        this.updateTask(task, {...data});
+        this.customHandlers.onUploadProgress({...task});
+    };
+
+    handleWorkerUploadComplete = (data) => {
+        console.log('handleWorkerUploadComplete', data);
+    };
+
+    handleWorkerUpdateState = (newState) => {
+        console.log('handleWorkerUpdateState', newState);
+    };
+
+    handleWorkerLog = (msg) => {
+        console.log('LOG FROM WORKER', msg);
+    };
 
     async addTask(task) {
         console.log("addTask", task);
@@ -49,7 +118,7 @@ class TransferQueue {
         const newTask = {
             ...task,
             uid: taskId,
-            status: consts.TASK_STATUSES.NEW,
+            state: consts.TASK_STATES.NEW,
             timestamp: Date.now(),
             totalBytes: task.file.size,
             processedBytes: 0
@@ -59,7 +128,13 @@ class TransferQueue {
         return newTask;
     }
 
-    removeTask(task) {}
+    updateTask(task, data) {
+        _assign(task, data);
+    }
+
+    removeTask(taskId) {
+        delete this.tasks[taskId];
+    }
 
     getTaskById(taskId) {
         return this.tasks[taskId];
@@ -70,7 +145,7 @@ class TransferQueue {
 
         if (task.type === consts.TRANSFER_TYPES.UPLOAD) {
             for (let worker of this.uploadWorkers) {
-                if (worker) {
+                if (!worker.isBusy()) {
                     freeWorker = worker;
                     break;
                 }

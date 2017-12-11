@@ -17,20 +17,23 @@ app.get('/', function (req, res) {
 
 app.post('/init_upload', function (req, res) {
     console.log("init_upload", req.body);
-    const {uid, md5, filename, ext, size, chunksTotal} = req.body;
+    const {md5, filename, ext, totalBytes, chunksTotal} = req.body;
 
-    let chunksUploaded = 0;
+    let chunksProcessed = 0;
+    let processedBytes = 0;
+
     if (DB[md5]) {
-        chunksUploaded = DB[md5].chunksUploaded;
+        chunksProcessed = DB[md5].chunksProcessed;
+        processedBytes = DB[md5].processedBytes;
     }
 
     const fileData = {
-        uid,
         md5,
         filename,
         ext,
-        size,
-        chunksUploaded,
+        totalBytes,
+        processedBytes,
+        chunksProcessed,
         chunksTotal
     };
 
@@ -44,13 +47,14 @@ app.post('/init_upload', function (req, res) {
 
 app.post('/upload', function (req, res) {
     console.log("/upload", req.query);
-    const { cn: chunkNumber, uid, md5 } = req.query;
+    const { cn: chunkNumber, pb: processedBytes, md5 } = req.query;
     const name = `${md5}.chunk.${chunkNumber}`;
     const dst = fs.createWriteStream(`${__dirname}/files/${name}`);
 
     req.pipe(dst);
     req.on('end', function () {
-        DB[md5].chunksUploaded = parseInt(chunkNumber, 10);
+        DB[md5].chunksProcessed = parseInt(chunkNumber, 10);
+        DB[md5].processedBytes = parseInt(processedBytes, 10);
         console.log(DB[md5]);
         console.log('file stream END');
         res.writeHead(200);
@@ -61,14 +65,13 @@ app.post('/upload', function (req, res) {
 
 app.post('/upload_finish', function (req, res) {
     // console.log("upload_finish", req.body);
-    // const {uid, filename, ext, size, chunksTotal} = req.body;
+    // const {filename, ext, totalBytes, chunksTotal} = req.body;
     //
     // const fileData = {
-    //     uid,
     //     filename,
     //     ext,
-    //     size,
-    //     chunksUploaded: 0,
+    //     totalBytes,
+    //     chunksProcessed: 0,
     //     chunksTotal
     // };
     //
