@@ -10,9 +10,9 @@ const processTasksReducer = (state = initialState, action = {}) => {
             const newTask = action.payload.task;
             let tasks = { [newTask.uid]: newTask };
             return { ...state, byId: {...state.byId, ...tasks} };
-        // case UPDATE_TRANSFER_TASK:
-        //     const taskToUpdate = action.payload.task;
-        //     return { ...state, byId: { ...state.byId, [taskToUpdate.uid]: taskToUpdate } };
+        case UPDATE_TRANSFER_TASK:
+            const taskToUpdate = action.payload.task;
+            return { ...state, byId: { ...state.byId, [taskToUpdate.uid]: taskToUpdate } };
         default:
             return state;
     }
