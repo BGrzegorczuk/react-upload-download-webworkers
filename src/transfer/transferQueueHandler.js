@@ -1,5 +1,6 @@
 import * as consts from "../common/consts";
 import store from "../redux/configureStore";
+import {addTransferTask} from "./actions/tasks";
 
 export const transferQueueHandler = (e) => {
     const {type, payload} = e.data;
@@ -28,22 +29,21 @@ export const transferQueueHandler = (e) => {
 // Called only if file was not uploaded before
 const handleWorkerUploadInit = (data) => {
     console.log('handleWorkerUploadInit', data);
-    // store.dispatch();
+    store.dispatch(addTransferTask(data));
 };
 
-const handleWorkerUploadProgress = (percentage) => {
-    console.log('handleWorkerUploadProgress', percentage);
-    // store.dispatch();
+const handleWorkerUploadProgress = (data) => {
+    console.log('handleWorkerUploadProgress', data.uid, data.processedBytes, data.totalBytes);
+    // store.dispatch(updateTransferTask(data));
 };
 
 const handleWorkerUploadComplete = (data) => {
     console.log('handleWorkerUploadComplete', data);
-    // store.dispatch();
+    // store.dispatch(completeTransferTask);
 };
 
 const handleWorkerUpdateState = (newState) => {
     console.log('handleWorkerUpdateState', newState);
-    // store.dispatch();
 };
 
 const handleWorkerLog = (msg) => {
