@@ -1,14 +1,26 @@
-- handle worker.postMessage callbacks || promise-worker library
-- handle errors in the app, ex. no server connections, etc (for now, when there is no server working, worker gives some log, and then nothing happens)
-- add some persistent db, ex. mongo
 
+- task pausing & resuming & task removing - w związku z tym, trzeba jeszcze popracowac nad wiadomościami wysyłąnymi pomiędzy
+    workerem a workerWrapperem i nad internal statami w workerze, gdzie byc trzymane dodatkowe zmienne, między innymi
+
+- do we need to keep processedBytes in DB for displaying progress? Probably not and progress can be calculated in workers...
+    Task state should be kept in task data for displaying in UI if task is in progress/paused/broken, etc...
+
+
+- how to handle already uploaded tasks statuses? should it be BROKEN, COMPLETED or sth else?
 - handle case when uploaded already uploaded file - some different state of completed task? (differentiate in UI)
-- add actions creators to maintain store - now nothing shows in the transfer list yet!
+- handle initializing new upload task, but in case when the same file is being uploaded (maybe it was completed before or only partially uploaded)
+- przy dispatchowaniu taska w akcji, property "file" w redux debuggerze ma niepełny kształt
+- przy uploadowaniu pliku, trzeba będzie wysyłac też metadane, tak jak w sharelocku, między innymi, parentmid, etc.
+- average speed like in sharelock - CHUNKS_UPLOAD_TIMES
 
 
 LOW LOW:
-
+- może zrobić task model, zamiast plain object?
+- handle errors in the app, ex. no server connections, etc (for now, when there is no server working, worker gives some log, and then nothing happens)
+- transfer list rendering optimization - render method is fired for all items if single progress event comes for particular task
+- add some persistent db, ex. mongo
 - Maybe file md5 should be counted only if no file with same name has been already uploaded? (optimization)
 - fileToArrayBuffer syntax does NOT work in IE...
 - workers can be initialized with parameters given as a constructor options to transferQueue. Now they imports consts file with for ex. CHUNK_SIZE, but that can be more customizable
 - use immutable.js to handle tasks and directory tree collections in store?
+- handle worker.postMessage callbacks || promise-worker library ?
