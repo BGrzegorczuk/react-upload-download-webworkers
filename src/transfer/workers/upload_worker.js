@@ -50,7 +50,8 @@ const handleUploadInit = (data) => {
 
     const md5 = fileMD5(data.buffer);
 
-    sendMsg(consts.MSG_TYPES.LOG, 'File MD5: ' + md5);
+    // sendMsg(consts.MSG_TYPES.LOG, 'File MD5: ' + md5);
+    console.log('File MD5: ' + md5);
 
     CHUNKS_TOTAL = Math.ceil(data.totalBytes / consts.CHUNK_SIZE);
     TASK = data;
@@ -59,29 +60,29 @@ const handleUploadInit = (data) => {
 
     const url = 'http://localhost/init_upload';
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', url);
+    xhr.open('POST', url, false); // make the request synchronous
     xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
 
     // TODO: make synchronous call & handle errors
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            const res = JSON.parse(xhr.responseText);
-            const msgPayload = { ...res, uid: TASK.uid };
-
-            console.log("RES:", res);
-
-            if (res.chunksTotal === res.chunksProcessed) {
-                handleFileAlreadyUploaded(data);
-            } else {
-                // TODO: ?? why not just simple incrementation
-                CHUNK_NO = res.chunksProcessed === 0 ? 1 : res.chunksProcessed + 1;
-
-                sendMsg(consts.MSG_TYPES.UPLOAD_INIT, msgPayload);
-
-                uploadChunk(md5, data);
-            }
-        }
-    };
+    // xhr.onreadystatechange = function () {
+    //     if (xhr.readyState === 4 && xhr.status === 200) {
+    //         const res = JSON.parse(xhr.responseText);
+    //         const msgPayload = { ...res, uid: TASK.uid };
+    //
+    //         console.log("RES:", res);
+    //
+    //         if (res.chunksTotal === res.chunksProcessed) {
+    //             handleFileAlreadyUploaded(data);
+    //         } else {
+    //             // TODO: ?? why not just simple incrementation
+    //             CHUNK_NO = res.chunksProcessed === 0 ? 1 : res.chunksProcessed + 1;
+    //
+    //             sendMsg(consts.MSG_TYPES.UPLOAD_INIT, msgPayload);
+    //
+    //             uploadChunk(md5, data);
+    //         }
+    //     }
+    // };
 
     const uploadData = {
         uid: data.uid,
@@ -93,6 +94,26 @@ const handleUploadInit = (data) => {
     };
 
     xhr.send(JSON.stringify(uploadData));
+
+    // TODO: for now only optimistic case implemented, no error handling
+
+    if (xhr.readyState === 4 && xhr.status === 200) {
+        const res = JSON.parse(xhr.responseText);
+        const msgPayload = { ...res, uid: TASK.uid };
+
+        console.log("RES:", res);
+
+        if (res.chunksTotal === res.chunksProcessed) {
+            handleFileAlreadyUploaded(data);
+        } else {
+            // TODO: ?? why not just simple incrementation
+            CHUNK_NO = res.chunksProcessed === 0 ? 1 : res.chunksProcessed + 1;
+
+            sendMsg(consts.MSG_TYPES.UPLOAD_INIT, msgPayload);
+
+            uploadChunk(md5, data); // must use setTimeout for handleInit fn to return
+        }
+    }
 };
 
 const handleFileAlreadyUploaded = (data) => {
@@ -117,11 +138,13 @@ const uploadChunk = (md5, data) => {
         }
     };
 
+    // TODO: MDN .../docs/XMLHttpRequest/Using_XMLHttpRequest - UNSENT...
+
     const sendChunk = function (offset, length, buff) {
         const chunk = buff.slice(offset, length+offset);
         console.log('sendChunk', CHUNK_NO, chunk.byteLength);
         const chunkData = new Uint8Array(chunk);
-        console.log(">>>>>", offset, chunkData.length);
+        console.log(">>>>>", 'offset ' + offset, 'chunkData.length ' + chunkData.length);
         const url = `http://localhost/upload?uid=${data.uid}&md5=${md5}&cn=${CHUNK_NO}&pb=${offset+chunkData.length}`;
         let xhr = new XMLHttpRequest();
 
@@ -197,7 +220,8 @@ const cleanup = () => {
 };
 
 const onUploadError = (err) => {
-    sendMsg(consts.MSG_TYPES.LOG, 'upload_worker error: ' + err);
+    // sendMsg(consts.MSG_TYPES.LOG, 'upload_worker error: ' + err);
+    console.log('upload_worker error: ' + err);
 };
 
 self.addEventListener('message', handleMsg);

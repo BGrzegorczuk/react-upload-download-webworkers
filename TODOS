@@ -1,3 +1,5 @@
+- rewrite worker xhr to be synchronous for simplicity
+
 
 - task pausing & resuming & task removing - w związku z tym, trzeba jeszcze popracowac nad wiadomościami wysyłąnymi pomiędzy
     workerem a workerWrapperem i nad internal statami w workerze, gdzie byc trzymane dodatkowe zmienne, między innymi
